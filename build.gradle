@@ -47,8 +47,7 @@ dependencies {
 	compile "codechicken:ForgeMultipart:${config.mc_version}-${config.fmp_version}:deobf"
 }
 
-version = "${project.config.mod_version}." + System.getenv("BUILD_NUMBER") ?: "1"
-
+version = "${project.config.mod_version}." + 33 
 println config.mc_version + "-" + config.forge_version
 // Setup the forge minecraft plugin data. Specify the preferred forge/minecraft version here
 minecraft {
