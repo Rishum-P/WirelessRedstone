@@ -5,6 +5,8 @@ import codechicken.lib.config.SimpleProperties;
 import codechicken.lib.util.CommonUtils;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.FMLLog;
 
 import java.io.*;
 import java.util.*;
@@ -92,7 +94,7 @@ public class SaveManager {
                 activeMapFile = file;
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error("Error during reset world: {}", e);
         }
     }
 
@@ -126,7 +128,7 @@ public class SaveManager {
             }
             largeSectorFile = new RandomAccessFile(file, "rw");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error("Error creating save files: {}", e);
         }
     }
 
@@ -144,7 +146,7 @@ public class SaveManager {
             freqMapFile.seek((freq - 1) * 2);
             freqMapFile.writeShort(sector);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error("Error setting Frequency sector: {}", e);
         }
     }
 
@@ -159,7 +161,7 @@ public class SaveManager {
                 rwfile.seek(sector * smallsectorsize);
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
     }
 
@@ -202,8 +204,9 @@ public class SaveManager {
             return ((int) file.length() / smallsectorsize) - 1;
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
+        return -1;
     }
 
     private int getUnusedSector(int numnodes) {
@@ -224,7 +227,7 @@ public class SaveManager {
         try {
             rwfile.writeShort((short) nextsector);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
     }
 
@@ -234,7 +237,7 @@ public class SaveManager {
             rwfile.skipBytes(2);
             rwfile.writeShort((short) numnodes);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
     }
 
@@ -248,8 +251,9 @@ public class SaveManager {
             }
             return nextsector;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
+        return -1;
     }
 
     private int getSectorLength(int sector) {
@@ -258,8 +262,9 @@ public class SaveManager {
             rwfile.skipBytes(2);
             return rwfile.readShort() & 0xFFFF;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
+        return sector;
     }
 
     private void markSectorStackUnused(int firstsector) {
@@ -328,7 +333,7 @@ public class SaveManager {
                 setNextSector(thissector, nextsector);
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
     }
 
@@ -355,7 +360,7 @@ public class SaveManager {
 
             writeNodes(freq, numnodes, nodes);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
     }
 
@@ -373,7 +378,7 @@ public class SaveManager {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
         }
     }
 
@@ -384,7 +389,8 @@ public class SaveManager {
             numsmallsectors = (int) (smallSectorFile.length() / smallsectorsize);
             numlargesectors = (int) (largeSectorFile.length() / largesectorsize);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error(e);
+            return;
         }
 
         usedSmallSectors = new ArrayList<>(numsmallsectors);
@@ -410,17 +416,20 @@ public class SaveManager {
                 continue;
             }
 
+            boolean exceptionOccurred = false;
+
+
             while (true) {
                 seekSector(nextsector);
                 setSectorUsed(nextsector, true);
-
                 int numnodes = getSectorLength(nextsector);
 
                 for (int j = 0; j < numnodes; j++) {
                     try {
                         RedstoneEther.server().loadTransmitter(dimension, rwfile.readInt(), rwfile.readInt(), rwfile.readInt(), freq);
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        FMLLog.log.error("Error loading transmitter: {}", e);
+                        exceptionOccurred = true;
                     }
                 }
 
@@ -430,7 +439,9 @@ public class SaveManager {
                     break;
                 }
             }
-
+            if (exceptionOccurred) {
+                break;
+            }
             RedstoneEther.server().setFreqClean(freq, dimension);
         }
     }
@@ -468,7 +479,7 @@ public class SaveManager {
 
             lastcleanuptime = System.currentTimeMillis();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error("Error removing Trailing Sectors: {}", e);
         }
     }
 
@@ -544,7 +555,7 @@ public class SaveManager {
                 din.close();
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error("Error loading dimension hash: {}", e);
         }
     }
 
@@ -573,7 +584,7 @@ public class SaveManager {
 
             dout.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error("Error saving Dimension hash: {}", e);
         }
     }
 
@@ -598,7 +609,7 @@ public class SaveManager {
             smallSectorFile.close();
             largeSectorFile.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            FMLLog.log.error("Error during unload: {}", e);
         }
     }
 }
